@@ -3,11 +3,11 @@ Archivo principal del sistema GlobalTrade.
 Permite gestionar productos, envíos, conversiones monetarias y documentación.
 """
 
-from modulos.productos import ProductoPerecedero, ProductoElectronico
-from modulos.envio import Envio
-from modulos.conversion import convertir_moneda
-from modulos.documentacion import generar_documento_envio
-from modulos.historial import registrar_transaccion, mostrar_historial
+from src.Dos_productos import ProductoPerecedero, ProductoElectronico
+from src.Tres_envios import Envio
+from src.Cuatro_conversion import convertir_moneda
+from src.Cinco_documentacion import generar_documento_envio
+from src.historial import registrar_transaccion, mostrar_historial
 
 # Crear productos de ejemplo
 manzanas = ProductoPerecedero(id=1, nombre="Manzanas", peso=10, valor=30, fecha_expiracion="2025-07-01")
@@ -28,3 +28,5 @@ print(generar_documento_envio(envio))
 print("\n--- HISTORIAL DE TRANSACCIONES ---")
 for registro in mostrar_historial():
     print(registro)
+
+

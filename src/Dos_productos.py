@@ -3,7 +3,7 @@ Define las clases de productos para el sistema GlobalTrade.
 Incluye herencia y polimorfismo para distintos tipos de productos.
 """
 
-from modulos.tarifas import obtener_tarifa_por_pais
+from src.tarifas import obtener_tarifa_por_pais
 
 class Producto:
     def __init__(self, id, nombre, peso, valor):

@@ -2,7 +2,7 @@
 Contiene la clase Envio para gestionar productos y calcular costos de envío.
 """
 
-from modulos.productos import Producto
+from src.Dos_productos import Producto
 
 class Envio:
     def __init__(self, origen, destino):
