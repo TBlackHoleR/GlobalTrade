@@ -1,37 +1,55 @@
-"""
-Define las clases de productos para el sistema GlobalTrade.
-Incluye herencia y polimorfismo para distintos tipos de productos.
-"""
-
-from src.tarifas import obtener_tarifa_por_pais
-
-class Producto:
-    def __init__(self, id, nombre, peso, valor):
+class ProductoPerecedero:
+    def __init__(self, id, nombre, peso, valor, fecha_expiracion):
         self._id = id
         self._nombre = nombre
         self._peso = peso
         self._valor = valor
-        self._pais_origen = ""
+        self._fecha_expiracion = fecha_expiracion
 
-    def calcular_aranceles(self, pais_destino):
-        tasa = obtener_tarifa_por_pais(pais_destino)
-        return self._valor * tasa
+    @property
+    def id(self):
+        return self._id
 
-    def generar_documentacion(self):
-        return f"Producto base: {self._nombre} - ID: {self._id}"
+    @property
+    def nombre(self):
+        return self._nombre
 
-class ProductoPerecedero(Producto):
-    def __init__(self, id, nombre, peso, valor, fecha_expiracion):
-        super().__init__(id, nombre, peso, valor)
-        self.fecha_expiracion = fecha_expiracion
+    @property
+    def peso(self):
+        return self._peso
 
-    def generar_documentacion(self):
-        return f"Perecedero - Expira: {self.fecha_expiracion}"
+    @property
+    def valor(self):
+        return self._valor
 
-class ProductoElectronico(Producto):
+    @property
+    def fecha_expiracion(self):
+        return self._fecha_expiracion
+
+class ProductoElectronico:
     def __init__(self, id, nombre, peso, valor, voltaje):
-        super().__init__(id, nombre, peso, valor)
-        self.voltaje = voltaje
+        self._id = id
+        self._nombre = nombre
+        self._peso = peso
+        self._valor = valor
+        self._voltaje = voltaje
 
-    def generar_documentacion(self):
-        return f"Electrónico - Voltaje: {self.voltaje}"
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def peso(self):
+        return self._peso
+
+    @property
+    def valor(self):
+        return self._valor
+
+    @property
+    def voltaje(self):
+        return self._voltaje
