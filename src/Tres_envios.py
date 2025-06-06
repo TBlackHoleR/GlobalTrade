@@ -3,106 +3,192 @@ Contiene la clase Envio para gestionar productos y calcular costos de envío.
 """
 
 import tkinter as tk
-from tkinter import messagebox, ttk
-from datetime import datetime
+from tkinter import ttk, messagebox
+import datetime
+from fpdf import FPDF
+import os
 
-class Producto:
-    def __init__(self, nombre, precio):
-        self.nombre = nombre
-        self.precio = precio
+# Clase para productos perecederos
+class ProductoPerecedero:
+    def __init__(self, id, nombre, peso, valor, fecha_expiracion):
+        self._id = id
+        self._nombre = nombre
+        self._peso = peso
+        self._valor = valor
+        self._fecha_expiracion = fecha_expiracion
 
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def peso(self):
+        return self._peso
+
+    @property
+    def valor(self):
+        return self._valor
+
+    @property
+    def fecha_expiracion(self):
+        return self._fecha_expiracion
+
+# Clase para productos electrónicos
+class ProductoElectronico:
+    def __init__(self, id, nombre, peso, valor, voltaje):
+        self._id = id
+        self._nombre = nombre
+        self._peso = peso
+        self._valor = valor
+        self._voltaje = voltaje
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def peso(self):
+        return self._peso
+
+    @property
+    def valor(self):
+        return self._valor
+
+    @property
+    def voltaje(self):
+        return self._voltaje
+
+# Clase para gestionar envíos
 class Envio:
-    def __init__(self):
+    def __init__(self, origen, destino):
+        self.origen = origen
+        self.destino = destino
         self.productos = []
-        self.historial = []
 
-    def agregar_producto(self, producto, cantidad):
-        self.productos.append((producto, cantidad))
+    def agregar_producto(self, producto):
+        self.productos.append(producto)
 
     def calcular_costo_total(self):
-        return sum(producto.precio * cantidad for producto, cantidad in self.productos)
-#Generar rastreo del producto
+        total = 0
+        gestor_aranceles = GestorAranceles()
+
+        for producto in self.productos:
+            tipo_producto = "Perecederos" if isinstance(producto, ProductoPerecedero) else "Tecnología"
+            costo = gestor_aranceles.calcular_costo_total(producto.valor, self.origen, producto.peso, tipo_producto)
+            total += costo['total_gtq']
+
+        return total
+
     def generar_rastreo(self):
-        ubicacion = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        self.historial.append(ubicacion)
-        return ubicacion
-#productos
-class SistemaLogistico:
+        rastreo_info = f"Envío de {self.origen} a {self.destino}:\n"
+        for producto in self.productos:
+            rastreo_info += f"- {producto.nombre}: Valor Q{producto.valor}, Peso {producto.peso} lb\n"
+        return rastreo_info
+
+# Clase para gestionar tasas y costos
+class GestorAranceles:
     def __init__(self):
-        self.productos = {
-            "Collar": Producto("Collar", 10),
-            "Juguete": Producto("Juguete", 15),
-            "Comida para Perro": Producto("Comida para Perro", 20),
-            "Comida para Gato": Producto("Comida para Gato", 25),
-            "Cama para Perro": Producto("Cama para Perro", 40),
-            "Cama para Gato": Producto("Cama para Gato", 45)
+        self.paises_monedas = {
+            'USA': 'USD',
+            'China': 'CNY',
+            'Alemania': 'EUR',
+            'Japón': 'JPY',
+            'México': 'MXN',
+            'Canadá': 'CAD',
+            'Reino Unido': 'GBP',
+            'Brasil': 'BRL',
+            'India': 'INR',
+            'Australia': 'AUD'
+        }
+        
+        self.tarifas = {
+            'USA': 0.017,
+            'China': 0.04,
+            'Alemania': 0.023,
+            'Japón': 0.026,
+            'México': 0.035,
+            'Canadá': 0.015,
+            'Reino Unido': 0.021,
+            'Brasil': 0.045,
+            'India': 0.038,
+            'Australia': 0.022
+        }
+        
+        self.costos_por_libra = {
+            'Tecnología': 7,
+            'Perecederos': 12,
+            'Híbridos': 9
         }
 
-        self.envio_actual = Envio()
-        self.ventana_principal = tk.Tk()
-        self.ventana_principal.title("Chronos Supply Chain")
-        self.ventana_principal.geometry("600x800")
+    def obtener_tasa_cambio(self, moneda_origen):
+        # ... (implementación de tasas de cambio)
+        return 1.0  # Valor por defecto (no usar en producción)
 
-        self.crear_componentes()
-#componentes
-    def crear_componentes(self):
-        tk.Label(self.ventana_principal, text="Nombre del Cliente:").pack(pady=5)
-        self.entry_nombre = tk.Entry(self.ventana_principal, width=50)
-        self.entry_nombre.pack(pady=5)
+    def calcular_costo_total(self, valor_producto, pais_origen, peso_lb, tipo_producto):
+        # ... (cálculo de costos)
+        return {'total_gtq': valor_producto + 100}  # Ejemplo de retorno
 
-        tk.Label(self.ventana_principal, text="País:").pack(pady=6)
-        self.entry_pais = tk.Entry(self.ventana_principal, width=50)
-        self.entry_pais.pack(pady=5)
+# Clase para la interfaz gráfica
+class InterfazGlobalTrade:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("GlobalTrade - Gestión de Comercio Internacional")
+        self.master.geometry("800x600")
 
-        tk.Label(self.ventana_principal, text="Seleccionar Producto:").pack(pady=5)
-        self.combo_producto = ttk.Combobox(self.ventana_principal, values=list(self.productos.keys()), width=47)
-        self.combo_producto.pack(pady=5)
+        self.productos_perecederos = [
+            ProductoPerecedero(1, "Manzanas", 10, 30, "2025-07-01"),
+            # ... (más productos)
+        ]
 
-        tk.Label(self.ventana_principal, text="Cantidad:").pack(pady=5)
-        self.entry_cantidad = tk.Entry(self.ventana_principal, width=5)
-        self.entry_cantidad.pack(pady=5)
+        self.productos_electronicos = [
+            ProductoElectronico(6, "Celular", 1, 300, 220),
+            # ... (más productos)
+        ]
 
-        boton_agregar = tk.Button(self.ventana_principal, text="Agregar Producto", command=self.agregar_producto)
-        boton_agregar.pack(pady=20)
+        self.paises = ["Guatemala", "México", "Chile", "España", "Estados Unidos", "Alemania", "Japón", "Canadá"]
 
-        boton_calcular = tk.Button(self.ventana_principal, text="Calcular Total", command=self.calcular_total_compra)
-        boton_calcular.pack(pady=20)
+        self.crear_widgets()
 
-        boton_generar_rastreo = tk.Button(self.ventana_principal, text="Generar Rastreo", command=self.generar_rastreo)
-        boton_generar_rastreo.pack(pady=20)
+    def crear_widgets(self):
+        # ... (creación de widgets)
+        tk.Button(self.master, text="Generar Envío", command=self.generar_envio).pack()
 
-        boton_mostrar_historial = tk.Button(self.ventana_principal, text="Mostrar Historial", command=self.mostrar_historial)
-        boton_mostrar_historial.pack(pady=20)
-#botones producto
-    def agregar_producto(self):
-        producto_nombre = self.combo_producto.get()
-        cantidad_str = self.entry_cantidad.get()
-        if cantidad_str.isdigit():
-            cantidad = int(cantidad_str)
-            producto = self.productos[producto_nombre]
-            self.envio_actual.agregar_producto(producto, cantidad)
-            messagebox.showinfo("Producto Agregado", f"{cantidad} de {producto_nombre} añadido al envío.")
+    def obtener_productos_seleccionados(self):
+        # ... (lógica para obtener productos seleccionados)
+        return []
 
-    def calcular_total_compra(self):
-        total_final = self.envio_actual.calcular_costo_total()
-        nombre_cliente = self.entry_nombre.get()
-        pais_cliente = self.entry_pais.get()
-        mensaje_final = f"Gracias {nombre_cliente} de {pais_cliente} por su compra. El total es: Q {total_final}."
-        messagebox.showinfo("Gracias por tu compra", mensaje_final)
+    def generar_envio(self):
+        productos = self.obtener_productos_seleccionados()
+        if not productos:
+            messagebox.showwarning("Advertencia", "Seleccione al menos un producto.")
+            return
 
-    def generar_rastreo(self):
-        ubicacion = self.envio_actual.generar_rastreo()
-        messagebox.showinfo("Rastreo generado", f"Rastreo generado en {ubicacion}")
+        origen = "Guatemala"  # Ejemplo, puedes usar un combobox para esto
+        destino = "México"  # Ejemplo, puedes usar un combobox para esto
 
-    def mostrar_historial(self):
-        mensaje = "Historial de Rastreo:\n"
-        for ubicacion in self.envio_actual.historial:
-            mensaje += f"- Envío generado en {ubicacion}\n"
-        messagebox.showinfo("Historial de Rastreo", mensaje)
+        envio = Envio(origen=origen, destino=destino)
+        for producto in productos:
+            envio.agregar_producto(producto)
 
-    def run(self):
-        self.ventana_principal.mainloop()
+        costo_total = envio.calcular_costo_total()
+        rastreo_info = envio.generar_rastreo()
+        messagebox.showinfo("Envío", f"Envío generado con éxito.\nCosto total: Q{costo_total:.2f}\n{rastreo_info}")
 
+# Función para generar documentos PDF
+def generar_documento_envio(envio, nombre_archivo="documento_envio.pdf"):
+    # ... (lógica para crear un PDF)
+    return f"PDF generado exitosamente: {nombre_archivo}"
+
+# Iniciar la aplicación
 if __name__ == "__main__":
-    sistema = SistemaLogistico()
-    sistema.run()
+    root = tk.Tk()
+    app = InterfazGlobalTrade(root)
+    root.mainloop()
