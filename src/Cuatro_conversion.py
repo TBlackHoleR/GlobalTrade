@@ -2,18 +2,19 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import datetime
 
-# Tasas de cambio actualizadas (ejemplo)
+# Monedas disponibles con tasas de cambio a USD (moneda base)
 TASAS_CAMBIO = {
-    'USD': {'GTQ': 7.82},    # Dólar estadounidense
-    'EUR': {'GTQ': 8.42},    # Euro
-    'CNY': {'GTQ': 1.09},    # Yuan chino
-    'JPY': {'GTQ': 0.049},   # Yen japonés
-    'MXN': {'GTQ': 0.42},    # Peso mexicano
-    'CAD': {'GTQ': 5.86},    # Dólar canadiense
-    'GBP': {'GTQ': 9.54},    # Libra esterlina
-    'BRL': {'GTQ': 1.51},    # Real brasileño
-    'INR': {'GTQ': 0.094},   # Rupia india
-    'AUD': {'GTQ': 5.32}     # Dólar australiano
+    'USD': 1.0,      # Dólar estadounidense (moneda base)
+    'GTQ': 7.82,     # Quetzal guatemalteco
+    'EUR': 0.93,     # Euro
+    'CNY': 7.25,     # Yuan chino
+    'JPY': 154.17,   # Yen japonés
+    'MXN': 16.77,    # Peso mexicano
+    'CAD': 1.36,     # Dólar canadiense
+    'GBP': 0.80,     # Libra esterlina
+    'BRL': 5.05,     # Real brasileño
+    'INR': 83.40,    # Rupia india
+    'AUD': 1.52      # Dólar australiano
 }
 
 # Nombres completos de monedas con sus símbolos
@@ -31,85 +32,119 @@ NOMBRES_MONEDA = {
     'GTQ': ('Quetzal Guatemalteco', 'Q')
 }
 
+# Nombres de países
+NOMBRES_PAISES = {
+    'USA': 'Estados Unidos',
+    'CHN': 'China',
+    'DEU': 'Alemania',
+    'JPN': 'Japón',
+    'MEX': 'México',
+    'CAN': 'Canadá',
+    'GBR': 'Reino Unido',
+    'BRA': 'Brasil',
+    'IND': 'India',
+    'AUS': 'Australia',
+    'GTM': 'Guatemala'
+}
+
 class GestorAranceles:
     def __init__(self):
-        # Países disponibles (sin Guatemala)
-        self.paises_monedas = {
-            'USA': 'USD',
-            'China': 'CNY',
-            'Alemania': 'EUR',
-            'Japón': 'JPY',
-            'México': 'MXN',
-            'Canadá': 'CAD',
-            'Reino Unido': 'GBP',
-            'Brasil': 'BRL',
-            'India': 'INR',
-            'Australia': 'AUD'
+        # Países disponibles con sus monedas
+        self.paises = {
+            'USA': {'moneda': 'USD', 'nombre': 'Estados Unidos'},
+            'CHN': {'moneda': 'CNY', 'nombre': 'China'},
+            'DEU': {'moneda': 'EUR', 'nombre': 'Alemania'},
+            'JPN': {'moneda': 'JPY', 'nombre': 'Japón'},
+            'MEX': {'moneda': 'MXN', 'nombre': 'México'},
+            'CAN': {'moneda': 'CAD', 'nombre': 'Canadá'},
+            'GBR': {'moneda': 'GBP', 'nombre': 'Reino Unido'},
+            'BRA': {'moneda': 'BRL', 'nombre': 'Brasil'},
+            'IND': {'moneda': 'INR', 'nombre': 'India'},
+            'AUS': {'moneda': 'AUD', 'nombre': 'Australia'},
+            'GTM': {'moneda': 'GTQ', 'nombre': 'Guatemala'}
         }
         
-        # Tarifas de aranceles simplificadas
+        # Tarifas de aranceles simplificadas (por país de destino)
         self.tarifas = {
             'USA': 0.017,
-            'China': 0.04,
-            'Alemania': 0.023,
-            'Japón': 0.026,
-            'México': 0.035,
-            'Canadá': 0.015,
-            'Reino Unido': 0.021,
-            'Brasil': 0.045,
-            'India': 0.038,
-            'Australia': 0.022
+            'CHN': 0.04,
+            'DEU': 0.023,
+            'JPN': 0.026,
+            'MEX': 0.035,
+            'CAN': 0.015,
+            'GBR': 0.021,
+            'BRA': 0.045,
+            'IND': 0.038,
+            'AUS': 0.022,
+            'GTM': 0.018  # Arancel para importaciones en Guatemala
         }
         
-        # Costos por libra según tipo de producto
-        self.costos_por_libra = {
-            'Tecnología': 7,
-            'Perecederos': 12,
-            'Híbridos': 9
+        # Costos logísticos por libra según tipo de producto (en USD)
+        self.costos_logistica = {
+            'Tecnología': 7.50,
+            'Perecederos': 12.25,
+            'Híbridos': 9.75
         }
     
-    def obtener_tasa_cambio(self, moneda_origen):
-        """Obtiene tasa de cambio de moneda origen a GTQ"""
-        if moneda_origen in TASAS_CAMBIO:
-            return TASAS_CAMBIO[moneda_origen]['GTQ']
-        # En un sistema real, aquí se consultaría una API
-        return 1.0  # Valor por defecto (no usar en producción)
+    def obtener_tasa_cambio(self, moneda_origen, moneda_destino):
+        """Obtiene tasa de cambio entre dos monedas usando USD como intermediario"""
+        # Si alguna moneda no está en las tasas, usar USD como respaldo
+        tasa_origen = TASAS_CAMBIO.get(moneda_origen, 1.0)
+        tasa_destino = TASAS_CAMBIO.get(moneda_destino, 1.0)
+        
+        # Convertir: moneda_origen -> USD -> moneda_destino
+        # 1 unidad de moneda_origen = (1 / tasa_origen) USD
+        # 1 USD = tasa_destino unidades de moneda_destino
+        # Por lo tanto: 1 unidad moneda_origen = (tasa_destino / tasa_origen) moneda_destino
+        return tasa_destino / tasa_origen
     
-    def calcular_costo_total(self, valor_producto, pais_origen, peso_lb, tipo_producto):
-        """Calcula costo total del producto"""
-        moneda_origen = self.paises_monedas.get(pais_origen, 'USD')
+    def calcular_costo_total(self, valor_producto, pais_origen, pais_destino, peso_lb, tipo_producto):
+        """Calcula costo total del producto con conversión internacional"""
+        # Obtener monedas de los países
+        moneda_origen = self.paises[pais_origen]['moneda']
+        moneda_destino = self.paises[pais_destino]['moneda']
         
-        # Convertir a GTQ
-        tasa_a_gtq = self.obtener_tasa_cambio(moneda_origen)
-        valor_gtq = valor_producto * tasa_a_gtq
+        # Obtener tasa de cambio
+        tasa_cambio = self.obtener_tasa_cambio(moneda_origen, moneda_destino)
         
-        # Calcular arancel
-        tasa_arancel = self.tarifas.get(pais_origen, 0.05)
-        arancel_gtq = valor_gtq * tasa_arancel
+        # Convertir el valor del producto a moneda destino
+        valor_destino = valor_producto * tasa_cambio
         
-        # Costos adicionales por tipo de producto (por libra)
-        costo_por_libra = self.costos_por_libra.get(tipo_producto, 0)
-        costo_extra = peso_lb * costo_por_libra
+        # Calcular arancel (basado en país destino)
+        tasa_arancel = self.tarifas.get(pais_destino, 0.05)
+        arancel_destino = valor_destino * tasa_arancel
         
-        total_gtq = valor_gtq + arancel_gtq + costo_extra
+        # Costos logísticos (en USD, luego convertimos a moneda destino)
+        costo_logistica_usd = peso_lb * self.costos_logistica.get(tipo_producto, 0)
+        # Convertir costo logística a moneda destino
+        tasa_logistica = self.obtener_tasa_cambio('USD', moneda_destino)
+        costo_logistica_destino = costo_logistica_usd * tasa_logistica
+        
+        total_destino = valor_destino + arancel_destino + costo_logistica_destino
         
         return {
-            'valor_gtq': valor_gtq,
-            'arancel_gtq': arancel_gtq,
-            'costo_extra': costo_extra,
-            'costo_por_libra': costo_por_libra,
-            'total_gtq': total_gtq,
+            'valor_destino': valor_destino,
+            'arancel_destino': arancel_destino,
+            'costo_logistica_destino': costo_logistica_destino,
+            'costo_logistica_usd': costo_logistica_usd,
+            'total_destino': total_destino,
             'tasa_arancel': tasa_arancel,
             'moneda_origen': moneda_origen,
-            'tasa_cambio': tasa_a_gtq
+            'moneda_destino': moneda_destino,
+            'tasa_cambio': tasa_cambio,
+            'tasa_logistica': tasa_logistica
         }
 
 class ChronosApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chronos Supply Chain")
-        self.root.geometry("500x600")  # Tamaño más grande para más información
+        self.root.title("Chronos Supply Chain - Internacional")
+        self.root.geometry("700x650")  # Tamaño más grande para el grid
         self.gestor = GestorAranceles()
+        
+        # Variables para selección
+        self.pais_origen = tk.StringVar()
+        self.pais_destino = tk.StringVar()
         
         # Crear la interfaz
         self.crear_interfaz()
@@ -124,91 +159,139 @@ class ChronosApp:
         main_frame = ttk.Frame(self.root, padding=15)
         main_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
+        # Botón Menú en la parte superior izquierda
+        btn_menu = ttk.Button(main_frame, text="Menú Principal", command=self.ir_a_menu)
+        btn_menu.pack(anchor='nw', pady=(0, 10))
+        
         # Título de la aplicación
-        ttk.Label(main_frame, text="Chronos Supply Chain", 
+        ttk.Label(main_frame, text="Chronos Supply Chain - Internacional", 
                  font=('Arial', 16, 'bold')).pack(pady=10)
         
         # Logo (simulado)
         logo_frame = ttk.Frame(main_frame)
         logo_frame.pack(pady=5)
-        ttk.Label(logo_frame, text="✈️ CHRONOS", font=('Arial', 12)).pack()
-        ttk.Label(logo_frame, text="Importaciones a Guatemala", font=('Arial', 10)).pack()
+        ttk.Label(logo_frame, text="✈️ CHRONOS GLOBAL", font=('Arial', 12)).pack()
+        ttk.Label(logo_frame, text="Sistema Internacional de Importaciones", font=('Arial', 10)).pack()
         
-        # 1. Nombre del cliente
-        ttk.Label(main_frame, text="Nombre completo:", font=('Arial', 10)).pack(anchor='w', pady=(10, 0))
-        self.entry_nombre = ttk.Entry(main_frame, width=35)
-        self.entry_nombre.pack(fill='x', pady=(0, 10))
+        # Frame para selección de países
+        paises_frame = ttk.LabelFrame(main_frame, text="Selección de Países", padding=10)
+        paises_frame.pack(fill='x', pady=10)
         
-        # 2. País de origen
-        ttk.Label(main_frame, text="PAIS DEL PEDIDO / HACIA GUATEMALA:", 
-                 font=('Arial', 10, 'bold')).pack(anchor='w', pady=(10, 0))
-        self.combo_pais = ttk.Combobox(main_frame, values=list(self.gestor.paises_monedas.keys()))
-        self.combo_pais.pack(fill='x', pady=(5, 5))
-        self.combo_pais.bind('<<ComboboxSelected>>', self.actualizar_moneda)
+        # Países de origen
+        ttk.Label(paises_frame, text="País Origen:", font=('Arial', 10)).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        paises_origen = list(self.gestor.paises.keys())
+        self.combo_origen = ttk.Combobox(paises_frame, values=paises_origen, 
+                                        textvariable=self.pais_origen, width=15)
+        self.combo_origen.grid(row=0, column=1, padx=5, pady=5)
+        self.combo_origen.bind('<<ComboboxSelected>>', self.actualizar_monedas)
+        self.combo_origen.current(0)
         
-        # Moneda local
-        self.label_moneda = ttk.Label(main_frame, text="Seleccione un país", font=('Arial', 9))
-        self.label_moneda.pack(anchor='w', pady=(0, 10))
+        # Moneda origen
+        self.label_moneda_origen = ttk.Label(paises_frame, text="Moneda: ", font=('Arial', 9))
+        self.label_moneda_origen.grid(row=0, column=2, padx=10, pady=5, sticky='w')
+        
+        # Países de destino
+        ttk.Label(paises_frame, text="País Destino:", font=('Arial', 10)).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        self.combo_destino = ttk.Combobox(paises_frame, values=paises_origen, 
+                                         textvariable=self.pais_destino, width=15)
+        self.combo_destino.grid(row=1, column=1, padx=5, pady=5)
+        self.combo_destino.bind('<<ComboboxSelected>>', self.actualizar_monedas)
+        self.combo_destino.current(10)  # Guatemala por defecto
+        
+        # Moneda destino
+        self.label_moneda_destino = ttk.Label(paises_frame, text="Moneda: ", font=('Arial', 9))
+        self.label_moneda_destino.grid(row=1, column=2, padx=10, pady=5, sticky='w')
+        
+        # Frame para detalles del producto
+        producto_frame = ttk.LabelFrame(main_frame, text="Detalles del Producto", padding=10)
+        producto_frame.pack(fill='x', pady=10)
         
         # Valor del producto
-        ttk.Label(main_frame, text="Valor del producto:", font=('Arial', 10)).pack(anchor='w', pady=(5, 0))
-        self.entry_valor = ttk.Entry(main_frame, width=15)
-        self.entry_valor.pack(anchor='w', pady=(0, 10))
+        ttk.Label(producto_frame, text="Valor del producto:", font=('Arial', 10)).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.entry_valor = ttk.Entry(producto_frame, width=15)
+        self.entry_valor.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         
-        # 3. Peso en libras
-        ttk.Label(main_frame, text="Peso (libras):", font=('Arial', 10)).pack(anchor='w', pady=(5, 0))
-        self.entry_peso = ttk.Entry(main_frame, width=10)
-        self.entry_peso.pack(anchor='w', pady=(0, 10))
+        # Moneda de valor
+        self.label_moneda_valor = ttk.Label(producto_frame, text="en USD", font=('Arial', 9))
+        self.label_moneda_valor.grid(row=0, column=2, padx=5, pady=5, sticky='w')
+        
+        # Peso en libras
+        ttk.Label(producto_frame, text="Peso (libras):", font=('Arial', 10)).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        self.entry_peso = ttk.Entry(producto_frame, width=10)
+        self.entry_peso.grid(row=1, column=1, padx=5, pady=5, sticky='w')
         
         # Tipo de producto
-        ttk.Label(main_frame, text="Tipo de producto:", font=('Arial', 10)).pack(anchor='w', pady=(5, 0))
-        self.combo_tipo = ttk.Combobox(main_frame, values=['Tecnología', 'Perecederos', 'Híbridos'])
-        self.combo_tipo.pack(fill='x', pady=(0, 15))
+        ttk.Label(producto_frame, text="Tipo de producto:", font=('Arial', 10)).grid(row=2, column=0, padx=5, pady=5, sticky='w')
+        self.combo_tipo = ttk.Combobox(producto_frame, values=['Tecnología', 'Perecederos', 'Híbridos'])
+        self.combo_tipo.grid(row=2, column=1, padx=5, pady=5, sticky='w', columnspan=2)
         self.combo_tipo.current(0)
         
         # Botón de cálculo
         btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(fill='x', pady=10)
-        btn_calcular = ttk.Button(btn_frame, text="Calcular Costo Total", command=self.calcular_total, width=20)
-        btn_calcular.pack(side='left')
+        btn_frame.pack(fill='x', pady=15)
         
-        btn_limpiar = ttk.Button(btn_frame, text="Limpiar", command=self.limpiar_campos, width=10)
-        btn_limpiar.pack(side='right')
+        btn_calcular = ttk.Button(btn_frame, text="Calcular Costo Total", 
+                                 command=self.calcular_total, width=20)
+        btn_calcular.pack(side='left', padx=(0, 10))
+        
+        btn_limpiar = ttk.Button(btn_frame, text="Limpiar", 
+                                command=self.limpiar_campos, width=10)
+        btn_limpiar.pack(side='left')
         
         # Área de resultados
         resultados_frame = ttk.LabelFrame(main_frame, text="Resultados del Cálculo", padding=10)
-        resultados_frame.pack(fill='x', pady=10)
+        resultados_frame.pack(fill='both', expand=True, pady=10)
         
         self.resultados_texto = tk.StringVar()
         self.resultados_texto.set("Complete los datos y haga clic en Calcular")
-        ttk.Label(resultados_frame, textvariable=self.resultados_texto, 
-                 wraplength=450, justify='left', font=('Arial', 10)).pack(fill='x')
-    
-    def actualizar_moneda(self, event):
-        """Actualiza la información de moneda cuando se selecciona un país"""
-        pais = self.combo_pais.get()
-        moneda = self.gestor.paises_monedas.get(pais, 'USD')
         
-        if moneda in NOMBRES_MONEDA:
-            nombre, simbolo = NOMBRES_MONEDA[moneda]
-            self.label_moneda.config(text=f"{nombre} ({moneda} {simbolo})")
-        else:
-            self.label_moneda.config(text=f"Moneda: {moneda}")
+        resultados_label = ttk.Label(resultados_frame, textvariable=self.resultados_texto, 
+                                   wraplength=650, justify='left', font=('Arial', 10))
+        resultados_label.pack(fill='both', expand=True)
+        
+        # Actualizar monedas iniciales
+        self.actualizar_monedas()
+    
+    def ir_a_menu(self):
+        # Esta función se conectará al menú principal
+        messagebox.showinfo("Menú", "Redirigiendo al menú principal...")
+        # self.root.destroy()  # En una aplicación real, aquí se mostraría el menú
+    
+    def actualizar_monedas(self, event=None):
+        """Actualiza la información de monedas cuando se selecciona un país"""
+        # Obtener códigos de países seleccionados
+        cod_origen = self.pais_origen.get()
+        cod_destino = self.pais_destino.get()
+        
+        # Actualizar moneda origen
+        if cod_origen in self.gestor.paises:
+            moneda_origen = self.gestor.paises[cod_origen]['moneda']
+            nombre, simbolo = NOMBRES_MONEDA.get(moneda_origen, (moneda_origen, moneda_origen))
+            self.label_moneda_origen.config(text=f"Moneda: {nombre} ({simbolo})")
+        
+        # Actualizar moneda destino
+        if cod_destino in self.gestor.paises:
+            moneda_destino = self.gestor.paises[cod_destino]['moneda']
+            nombre, simbolo = NOMBRES_MONEDA.get(moneda_destino, (moneda_destino, moneda_destino))
+            self.label_moneda_destino.config(text=f"Moneda: {nombre} ({simbolo})")
     
     def calcular_total(self):
         """Calcula y muestra el costo total con desglose detallado"""
         try:
-            # Validar datos
-            nombre = self.entry_nombre.get().strip()
-            pais = self.combo_pais.get().strip()
+            # Obtener países seleccionados
+            cod_origen = self.pais_origen.get()
+            cod_destino = self.pais_destino.get()
+            
+            if not cod_origen:
+                raise ValueError("Seleccione un país de origen")
+            if not cod_destino:
+                raise ValueError("Seleccione un país de destino")
+            
+            # Obtener otros datos
             valor = self.entry_valor.get().strip()
             peso = self.entry_peso.get().strip()
             tipo = self.combo_tipo.get()
             
-            if not nombre:
-                raise ValueError("Ingrese su nombre")
-            if not pais:
-                raise ValueError("Seleccione un país de origen")
             if not valor:
                 raise ValueError("Ingrese el valor del producto")
             if not peso:
@@ -222,24 +305,35 @@ class ChronosApp:
             if peso_num <= 0:
                 raise ValueError("El peso debe ser mayor que cero")
             
+            # Obtener nombres completos de países
+            pais_origen = NOMBRES_PAISES.get(cod_origen, cod_origen)
+            pais_destino = NOMBRES_PAISES.get(cod_destino, cod_destino)
+            
             # Calcular costos
-            resultados = self.gestor.calcular_costo_total(valor_num, pais, peso_num, tipo)
-        
+            resultados = self.gestor.calcular_costo_total(
+                valor_num, cod_origen, cod_destino, peso_num, tipo
+            )
+            
             # Formatear resultados con desglose detallado
             resultado_texto = (
-                f"Cliente: {nombre}\n"
-                f"Origen: {pais} ({resultados['moneda_origen']})\n"
+                f"Ruta: {pais_origen} → {pais_destino}\n"
                 f"Tipo de producto: {tipo}\n"
-                f"Tasa de cambio: 1 {resultados['moneda_origen']} = Q{resultados['tasa_cambio']:.3f}\n"
                 "------------------------------------------------\n"
-                f"Valor del producto: Q{resultados['valor_gtq']:.2f}\n"
-                f"Arancel ({resultados['tasa_arancel']*100:.1f}%): Q{resultados['arancel_gtq']:.2f}\n"
-                f"Costos logísticos para {tipo}:\n"
-                f"  - Tarifa: Q{resultados['costo_por_libra']}/lb\n"
+                f"Valor del producto: {resultados['moneda_origen']}{valor_num:.2f}\n"
+                f"Tasa de cambio: 1 {resultados['moneda_origen']} = "
+                f"{resultados['tasa_cambio']:.4f} {resultados['moneda_destino']}\n"
+                f"Valor en destino: {resultados['moneda_destino']}{resultados['valor_destino']:.2f}\n"
+                "------------------------------------------------\n"
+                f"Arancel ({resultados['tasa_arancel']*100:.1f}%): "
+                f"{resultados['moneda_destino']}{resultados['arancel_destino']:.2f}\n"
+                f"Costos logísticos:\n"
+                f"  - Tarifa: ${resultados['costo_logistica_usd']:.2f} USD\n"
                 f"  - Peso: {peso_num} lb\n"
-                f"  - Total logística: Q{resultados['costo_extra']:.2f}\n"
+                f"  - Total logística: {resultados['moneda_destino']}{resultados['costo_logistica_destino']:.2f}\n"
                 "------------------------------------------------\n"
-                f"TOTAL: Q{resultados['total_gtq']:.2f}"
+                f"TOTAL EN DESTINO: {resultados['moneda_destino']}{resultados['total_destino']:.2f}\n"
+                "------------------------------------------------\n"
+                f"Tasa logística: 1 USD = {resultados['tasa_logistica']:.4f} {resultados['moneda_destino']}"
             )
             
             self.resultados_texto.set(resultado_texto)
@@ -251,9 +345,9 @@ class ChronosApp:
     
     def limpiar_campos(self):
         """Limpia todos los campos del formulario"""
-        self.entry_nombre.delete(0, tk.END)
-        self.combo_pais.set('')
-        self.label_moneda.config(text="Seleccione un país")
+        self.combo_origen.current(0)
+        self.combo_destino.current(10)  # Guatemala por defecto
+        self.actualizar_monedas()
         self.entry_valor.delete(0, tk.END)
         self.entry_peso.delete(0, tk.END)
         self.combo_tipo.current(0)
@@ -264,6 +358,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = ChronosApp(root)
     root.mainloop()
-
-
-
