@@ -9,8 +9,10 @@ import subprocess
 import os, sys
 
 # Funciones para ejecutar los otros archivos
+def ejecutar_productos():
+    subprocess.run(["python", "src/Dos_productos.py"])
+
 def ejecutar_envios():
-    
     subprocess.run(["python", "src/Tres_envios.py"])
 
 def ejecutar_conversion():
@@ -46,6 +48,9 @@ ttk.Label(logo_frame, text="Importaciones a Guatemala", font=('Arial', 10)).pack
 titulo = tk.Label(root, text="Seleccione una opción", font=("Arial", 16))
 titulo.pack(pady=20)
 
+btn_documentacion = tk.Button(root, text="Productos", command=ejecutar_productos, width=25)
+btn_documentacion.pack(pady=5)
+
 btn_envios = tk.Button(root, text="Gestión de Envíos", command=ejecutar_envios, width=25)
 btn_envios.pack(pady=5)
 
@@ -54,6 +59,8 @@ btn_conversion.pack(pady=5)
 
 btn_documentacion = tk.Button(root, text="Generar Documentación", command=ejecutar_documentacion, width=25)
 btn_documentacion.pack(pady=5)
+
+
 
 btn_salir = tk.Button(root, text="Salir", command=salir, width=25)
 btn_salir.pack(pady=20)
