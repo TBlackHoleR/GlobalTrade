@@ -6,13 +6,15 @@ Permite gestionar productos, envíos, conversiones monetarias y documentación.
 import tkinter as tk
 from tkinter import ttk, messagebox
 import subprocess
-import os
+import os, sys
 
 # Funciones para ejecutar los otros archivos
 def ejecutar_envios():
+    
     subprocess.run(["python", "src/Tres_envios.py"])
 
 def ejecutar_conversion():
+    root.destroy()
     subprocess.run(["python", "src/Cuatro_conversion.py"])
 
 def ejecutar_documentacion():

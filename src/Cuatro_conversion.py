@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import datetime
+import subprocess, sys, os
 
 # Monedas disponibles con tasas de cambio a USD (moneda base)
 TASAS_CAMBIO = {
@@ -160,7 +161,7 @@ class ChronosApp:
         main_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
         # Botón Menú en la parte superior izquierda
-        btn_menu = ttk.Button(main_frame, text="Menú Principal", command=self.ir_a_menu)
+        btn_menu = ttk.Button(main_frame, text="Menú Principal", command=self.regresar_menu)
         btn_menu.pack(anchor='nw', pady=(0, 10))
         
         # Título de la aplicación
@@ -252,10 +253,13 @@ class ChronosApp:
         # Actualizar monedas iniciales
         self.actualizar_monedas()
     
-    def ir_a_menu(self):
-        # Esta función se conectará al menú principal
-        messagebox.showinfo("Menú", "Redirigiendo al menú principal...")
-        # self.root.destroy()  # En una aplicación real, aquí se mostraría el menú
+    def regresar_menu(self):
+        self.root.destroy()
+        # Ruta al menú principal
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        main_script = os.path.abspath(os.path.join(script_dir, '..', 'Uno_main.py'))
+        subprocess.Popen([sys.executable, main_script])
+        sys.exit()  # Cierra completamente este script
     
     def actualizar_monedas(self, event=None):
         """Actualiza la información de monedas cuando se selecciona un país"""
