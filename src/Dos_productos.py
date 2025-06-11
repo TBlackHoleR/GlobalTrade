@@ -37,33 +37,59 @@ def crear_productos_ejemplo():
         'Electrónicos': [],
         'Híbridos': []
     }
-    
-    # Productos perecederos
-    nombres_perecederos = ["Manzanas", "Leche Fresca", "Carne de Res", "Pescado", "Yogurt", 
-                          "Queso", "Huevos", "Fresas", "Lechuga", "Tomates"]
-    for nombre in nombres_perecederos:
-        precio = round(random.uniform(5.0, 30.0), 2)
-        peso = round(random.uniform(1.0, 10.0), 2)
+
+    # Productos perecederos (peso puede variar)
+    perecederos = [
+        ("Manzanas", 12.50),
+        ("Leche Fresca", 9.00),
+        ("Carne de Res", 25.00),
+        ("Pescado", 22.75),
+        ("Yogurt", 6.80),
+        ("Queso", 15.20),
+        ("Huevos", 7.50),
+        ("Fresas", 10.00),
+        ("Lechuga", 5.90),
+        ("Tomates", 6.20)
+    ]
+    for nombre, precio in perecederos:
+        peso = round(random.uniform(1.0, 10.0), 2)  # peso aleatorio
         productos['Perecederos'].append(ProductoPerecible(nombre, precio, peso))
-    
-    # Productos electrónicos
-    nombres_electronicos = ["Smartphone", "Laptop", "Tablet", "Smartwatch", "Auriculares",
-                           "Televisor", "Cámara", "Consola", "Drone", "Altavoz Inteligente"]
-    for nombre in nombres_electronicos:
-        precio = round(random.uniform(100.0, 2000.0), 2)
-        peso = round(random.uniform(0.5, 15.0), 2)
+
+    # Productos electrónicos (peso definido)
+    electronicos = [
+        ("Smartphone", 699.99, 0.4),
+        ("Laptop", 1250.00, 2.5),
+        ("Tablet", 450.00, 0.8),
+        ("Smartwatch", 199.99, 0.2),
+        ("Auriculares", 89.99, 0.3),
+        ("Televisor", 999.00, 10.0),
+        ("Cámara", 550.00, 1.2),
+        ("Consola", 399.99, 3.5),
+        ("Drone", 799.99, 2.0),
+        ("Altavoz Inteligente", 129.99, 1.0)
+    ]
+    for nombre, precio, peso in electronicos:
         productos['Electrónicos'].append(ProductoElectronico(nombre, precio, peso))
-    
-    # Productos híbridos
-    nombres_hibridos = ["Refrigerador Inteligente", "Horno con WiFi", "Lavadora Smart", 
-                       "Cafetera Programable", "Aspiradora Robot", "Termostato Inteligente",
-                       "Sistema de Riego", "Báscula Conectada", "Purificador de Aire", "Robot de Cocina"]
-    for nombre in nombres_hibridos:
-        precio = round(random.uniform(150.0, 1200.0), 2)
-        peso = round(random.uniform(8.0, 50.0), 2)
+
+    # Productos híbridos (peso aleatorio)
+    hibridos = [
+        ("Refrigerador Inteligente", 1100.00),
+        ("Horno con WiFi", 750.00),
+        ("Lavadora Smart", 980.00),
+        ("Cafetera Programable", 280.00),
+        ("Aspiradora Robot", 450.00),
+        ("Termostato Inteligente", 220.00),
+        ("Sistema de Riego", 360.00),
+        ("Báscula Conectada", 140.00),
+        ("Purificador de Aire", 300.00),
+        ("Robot de Cocina", 600.00)
+    ]
+    for nombre, precio in hibridos:
+        peso = round(random.uniform(8.0, 50.0), 2)  # peso aleatorio
         productos['Híbridos'].append(ProductoHibrido(nombre, precio, peso))
-    
+
     return productos
+
 
 class ChronosApp:
     TASA_CAMBIO_GTQ_USD = 7.82
