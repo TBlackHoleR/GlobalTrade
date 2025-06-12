@@ -1,7 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Tk
 import random
 import datetime
+from fpdf import FPDF
+import os
 
 # --- PRODUCTOS Y CLASES ---
 
@@ -86,10 +88,7 @@ def crear_productos_ejemplo():
 
 class Envio:
     def __init__(self):
-        # Diccionario: clave producto, valor cantidad
         self.productos_cantidades = {}
-
-        # Rastreo - lista de dicts con fecha, ubicacion, estado
         self.rastreo = []
 
     def agregar_producto(self, producto, cantidad=1):
@@ -99,7 +98,6 @@ class Envio:
             self.productos_cantidades[producto] = cantidad
 
     def calcularCostoTotal(self):
-        # Suma producto.precio * cantidad
         total = 0.0
         for producto, cantidad in self.productos_cantidades.items():
             total += producto.precio * cantidad
@@ -126,7 +124,7 @@ class EnviosApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Módulo de Envíos y Rastreo")
-        self.root.geometry("850x650")
+        self.root.geometry("900x800")
         self.root.configure(bg='#ffffff')
 
         self.productos_disponibles = crear_productos_ejemplo()
@@ -145,22 +143,73 @@ class EnviosApp:
         main_frame = ttk.Frame(self.root, padding=15)
         main_frame.pack(fill='both', expand=True, padx=20, pady=15)
 
-        ttk.Label(main_frame, text="Módulo de Envíos y Rastreo", style='Title.TLabel').pack(pady=(0, 18))
+        # Nombre del comprador
+        nombre_frame = ttk.Frame(main_frame)
+        nombre_frame.pack(fill='x', pady=(0, 15))
+        ttk.Label(nombre_frame, text="Nombre del Comprador:", width=20).pack(side='left')
+        self.nombre_comprador_var = tk.StringVar()
+        self.entry_nombre_comprador = ttk.Entry(nombre_frame, textvariable=self.nombre_comprador_var, width=40)
+        self.entry_nombre_comprador.pack(side='left', padx=5)
 
-        # Selección categoria, producto, cantidad
+        # Estructura grid para PDF con algunos valores ficticios predeterminados
+        self.grid_structure = [
+            ("Número de correlativo", "123456", "Encabezado"),
+            ("Fecha de aceptación de Registro", datetime.datetime.now().strftime("%Y-%m-%d"), "Encabezado"),
+            ("Aduana de Registro/Inicio de tránsito", "Aduana Central", "Encabezado"),
+            ("País de Procedencia", "Estados Unidos", "Tránsito"),
+            ("País de Destino", "Guatemala", "Tránsito"),
+            ("Aduana de Destino", "Aduana de Guatemala", "Tránsito"),
+            ("Depósito Aduanero/Zona Franca", "Zona Franca Norte", "Tránsito"),
+            ("Exportador - Número de Identificación", "X123456789", "Partes"),
+            ("Exportador - Razón Social", "Exportadora ABC", "Partes"),
+            ("Importador - Número de Identificación", "Y987654321", "Partes"),
+            ("Importador - Razón Social", "", "Partes"),  # Solicitar ingreso
+            ("Transportista - Código", "TR-001", "Partes"),
+            ("Transportista - Nombre", "Transportes Rápidos", "Partes"),
+            ("Transportista - Nombre del Conductor", "Juan Pérez", "Partes"),
+            ("Transportista - ID Unidad", "U-1001", "Partes"),
+            ("Transportista - ID Remolque", "R-2002", "Partes"),
+            ("Transportista - Contenedor(es)", "Contenedor 10A", "Partes"),
+            ("Dispositivo de Seguridad", "GPS Activo", "Carga"),
+            ("Cantidad de Bultos", "", "Carga"),  # Solicitar ingreso
+            ("Peso Bruto Total", "", "Carga"),  # Calculado de productos
+            ("Observaciones Generales", "", "Finalización"),  # Solicitar ingreso
+            ("Firma del declarante", "", "Finalización")  # Será nombre comprador
+        ]
+        # Crear entradas solo para campos vacíos solicitados
+        self.grid_entries_vars = {}
+        for campo, valor, seccion in self.grid_structure:
+            var = tk.StringVar()
+            # Si el valor es vacío se crea entrada para el usuario
+            if valor == "":
+                frame = ttk.Frame(main_frame)
+                frame.pack(fill='x', pady=2)
+                ttk.Label(frame, text=campo+":", width=25).pack(side='left')
+                entry = ttk.Entry(frame, textvariable=var, width=50)
+                entry.pack(side='left', padx=5)
+            else:
+                var.set(valor)
+            self.grid_entries_vars[campo] = var
+
+        # Título
+        ttk.Label(main_frame, text="Módulo de Envíos y Rastreo", style='Title.TLabel').pack(pady=(5, 15))
+
+        # Selección y adición de productos
         seleccion_frame = ttk.LabelFrame(main_frame, text="Agregar Productos al Envío", padding=12)
         seleccion_frame.pack(fill='x', pady=10)
 
         ttk.Label(seleccion_frame, text="Categoría:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.categoria_var = tk.StringVar()
-        self.combo_categoria = ttk.Combobox(seleccion_frame, textvariable=self.categoria_var, values=list(self.productos_disponibles.keys()), state='readonly', width=23)
+        self.combo_categoria = ttk.Combobox(seleccion_frame, textvariable=self.categoria_var,
+                                            values=list(self.productos_disponibles.keys()), state='readonly', width=23)
         self.combo_categoria.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         self.combo_categoria.bind("<<ComboboxSelected>>", self.actualizar_productos)
         self.combo_categoria.current(0)
 
         ttk.Label(seleccion_frame, text="Producto:").grid(row=0, column=2, padx=5, pady=5, sticky='w')
         self.producto_var = tk.StringVar()
-        self.combo_producto = ttk.Combobox(seleccion_frame, textvariable=self.producto_var, values=[], state='readonly', width=30)
+        self.combo_producto = ttk.Combobox(seleccion_frame, textvariable=self.producto_var,
+                                           values=[], state='readonly', width=30)
         self.combo_producto.grid(row=0, column=3, padx=5, pady=5, sticky='w')
 
         ttk.Label(seleccion_frame, text="Cantidad:").grid(row=0, column=4, padx=5, pady=5, sticky='w')
@@ -171,47 +220,47 @@ class EnviosApp:
         btn_agregar = ttk.Button(seleccion_frame, text="Agregar al Envío", command=self.agregar_producto_envio)
         btn_agregar.grid(row=0, column=6, padx=10, pady=5)
 
-        # Productos seleccionados - usar Treeview para mostrar producto y cantidad con peso y precio por unidad
+        # Productos seleccionados
         seleccionados_frame = ttk.LabelFrame(main_frame, text="Productos Seleccionados", padding=12)
         seleccionados_frame.pack(fill='both', expand=True, pady=10)
 
         columns = ("producto", "cantidad", "precio_unit", "peso_unit", "subtotal")
         self.tree_seleccionados = ttk.Treeview(seleccionados_frame, columns=columns, show='headings', selectmode='browse')
-        self.tree_seleccionados.heading("producto", text="Producto")
-        self.tree_seleccionados.heading("cantidad", text="Cantidad")
-        self.tree_seleccionados.heading("precio_unit", text="Precio Unitario ($)")
-        self.tree_seleccionados.heading("peso_unit", text="Peso Unitario (lb)")
-        self.tree_seleccionados.heading("subtotal", text="Subtotal ($)")
-        self.tree_seleccionados.column("producto", width=230, anchor='w')
-        self.tree_seleccionados.column("cantidad", width=80, anchor='center')
-        self.tree_seleccionados.column("precio_unit", width=110, anchor='e')
-        self.tree_seleccionados.column("peso_unit", width=120, anchor='e')
-        self.tree_seleccionados.column("subtotal", width=110, anchor='e')
+        for col, text, width, anchor in [
+            ("producto", "Producto", 230, 'w'),
+            ("cantidad", "Cantidad", 80, 'center'),
+            ("precio_unit", "Precio Unitario ($)", 110, 'e'),
+            ("peso_unit", "Peso Unitario (lb)", 120, 'e'),
+            ("subtotal", "Subtotal ($)", 110, 'e'),
+        ]:
+            self.tree_seleccionados.heading(col, text=text)
+            self.tree_seleccionados.column(col, width=width, anchor=anchor)
         self.tree_seleccionados.pack(fill='both', expand=True, pady=5)
 
-        # Botón para eliminar producto seleccionado
-        btn_eliminar = ttk.Button(seleccionados_frame, text="Eliminar Producto Seleccionado", command=self.eliminar_producto_seleccionado)
+        btn_eliminar = ttk.Button(seleccionados_frame, text="Eliminar Producto Seleccionado",
+                                  command=self.eliminar_producto_seleccionado)
         btn_eliminar.pack(pady=5)
 
-        # Costo total y botones acciones
         bottom_frame = ttk.Frame(main_frame)
         bottom_frame.pack(fill='x', pady=10)
 
         self.label_costo_total = ttk.Label(bottom_frame, text="Costo Total: $0.00", font=('Segoe UI', 12, 'bold'))
         self.label_costo_total.pack(side='left', padx=5)
 
-        # Botones: Crear Envío, Generar Rastreo,
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(fill='x', pady=10)
 
         self.btn_crear_envio = ttk.Button(btn_frame, text="Crear Envío", command=self.crear_envio)
         self.btn_crear_envio.pack(side='left', padx=10)
 
-        self.btn_generar_rastreo = ttk.Button(btn_frame, text="Generar Rastreo", command=self.generar_rastreo, state=tk.DISABLED)
+        self.btn_generar_rastreo = ttk.Button(btn_frame, text="Generar Rastreo", command=self.generar_rastreo,
+                                              state=tk.DISABLED)
         self.btn_generar_rastreo.pack(side='left', padx=10)
 
+        self.btn_info_envio = ttk.Button(btn_frame, text="Información del Envío", command=self.mostrar_info_envio,
+                                        state=tk.DISABLED)
+        self.btn_info_envio.pack(side='left', padx=10)
 
-        # Texto para rastreo
         rastreo_frame = ttk.LabelFrame(main_frame, text="Rastreo del Envío", padding=10)
         rastreo_frame.pack(fill='both', expand=True, pady=10)
 
@@ -238,7 +287,6 @@ class EnviosApp:
         producto_nombre = self.producto_var.get()
         cantidad_text = self.cantidad_var.get()
 
-        # Validar cantidad
         try:
             cantidad = int(cantidad_text)
             if cantidad < 1:
@@ -247,28 +295,20 @@ class EnviosApp:
             messagebox.showerror("Error", "Ingrese una cantidad válida (entero mayor que 0).")
             return
 
-        # Buscar producto en lista
         productos = self.productos_disponibles.get(categoria, [])
         producto = next((p for p in productos if p.nombre == producto_nombre), None)
         if producto is None:
             messagebox.showerror("Error", "Producto no válido.")
             return
 
-        # Agregar al envio actual
         self.envio_actual.agregar_producto(producto, cantidad)
-
-        # Actualizar UI (Treeview)
         self.actualizar_lista_seleccionados()
-
-        # Reiniciar cantidad a 1
         self.cantidad_var.set("1")
 
     def actualizar_lista_seleccionados(self):
-        # Limpiar Treeview
         for i in self.tree_seleccionados.get_children():
             self.tree_seleccionados.delete(i)
 
-        # Añadir filas con producto, cantidad, precio unit, peso unit, subtotal
         for producto, cantidad in self.envio_actual.productos_cantidades.items():
             subtotal = producto.precio * cantidad
             self.tree_seleccionados.insert('', tk.END, values=(
@@ -279,15 +319,10 @@ class EnviosApp:
                 f"${subtotal:.2f}"
             ))
 
-        # Actualizar costo total
         costo_total = self.envio_actual.calcularCostoTotal()
         self.label_costo_total.config(text=f"Costo Total: ${costo_total:.2f}")
-
-        # Como se ha modificado el envío actual pero aún no creado formalmente, deshabilitar botones rastreo/info
         self.btn_generar_rastreo.config(state=tk.DISABLED)
         self.btn_info_envio.config(state=tk.DISABLED)
-
-        # Limpiar rastreo anterior
         self.text_rastreo.configure(state='normal')
         self.text_rastreo.delete('1.0', tk.END)
         self.text_rastreo.configure(state='disabled')
@@ -301,7 +336,6 @@ class EnviosApp:
         values = self.tree_seleccionados.item(item, 'values')
         producto_nombre = values[0]
 
-        # Encontrar producto objeto a eliminar
         producto_a_eliminar = None
         for producto in self.envio_actual.productos_cantidades.keys():
             if producto.nombre == producto_nombre:
@@ -313,21 +347,99 @@ class EnviosApp:
             self.actualizar_lista_seleccionados()
 
     def crear_envio(self):
+        nombre_comprador = self.nombre_comprador_var.get().strip()
+        if not nombre_comprador:
+            messagebox.showerror("Error", "Por favor ingrese el nombre del comprador.")
+            return
+
         if not self.envio_actual.productos_cantidades:
             messagebox.showerror("Error", "Debe agregar al menos un producto antes de crear un envío.")
             return
 
         costo_total = self.envio_actual.calcularCostoTotal()
-        messagebox.showinfo("Envío Creado", f"El envío ha sido creado.\nCosto total: ${costo_total:.2f}")
+        messagebox.showinfo("Envío Creado", f"El envío ha sido creado para: {nombre_comprador}\nCosto total: ${costo_total:.2f}")
 
-        # Habilitar botones generar rastreo e info envio
+        self.generar_pdf_envio(nombre_comprador)
+
         self.btn_generar_rastreo.config(state=tk.NORMAL)
         self.btn_info_envio.config(state=tk.NORMAL)
-
-        # Limpiar cuadro de rastreo si estaba lleno
         self.text_rastreo.configure(state='normal')
         self.text_rastreo.delete('1.0', tk.END)
         self.text_rastreo.configure(state='disabled')
+
+    def generar_pdf_envio(self, nombre_comprador):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 10, "Detalles del Envío", ln=True, align='C')
+        pdf.ln(10)
+
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, f"Comprador: {nombre_comprador}", ln=True)
+        pdf.ln(5)
+
+        pdf.cell(0, 10, "Productos en el Envío:", ln=True)
+        pdf.set_font("Arial", '', 12)
+
+        for producto, cantidad in self.envio_actual.productos_cantidades.items():
+            subtotal = producto.precio * cantidad
+            line = f"{producto.nombre} - Cantidad: {cantidad} - Precio Unitario: ${producto.precio:.2f} - Peso Unitario: {producto.peso:.2f} lb - Subtotal: ${subtotal:.2f}"
+            pdf.multi_cell(0, 10, line)
+
+        pdf.ln(5)
+        costo_total = self.envio_actual.calcularCostoTotal()
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, f"Costo Total: ${costo_total:.2f}", ln=True)
+
+        # Información adicional con valores y algunos datos solicitados
+        pdf.ln(10)
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Información Adicional", ln=True)
+        pdf.ln(5)
+
+        col_widths = [70, 70, 40]
+        headers = ["Campo", "Valor", "Sección"]
+        for i, header in enumerate(headers):
+            pdf.cell(col_widths[i], 10, header, border=1, align='C')
+        pdf.ln()
+
+        pdf.set_font("Arial", '', 11)
+
+        for campo, valor_pred, seccion in self.grid_structure:
+            valor = valor_pred
+            # Sobreescribir con valor ingresado si corresponde
+            if campo in self.grid_entries_vars and self.grid_entries_vars[campo].get().strip():
+                valor = self.grid_entries_vars[campo].get().strip()
+            # Peso Bruto Total se calcula sumando pesos * cantidades
+            if campo == "Peso Bruto Total":
+                peso_total = 0.0
+                for prod, cant in self.envio_actual.productos_cantidades.items():
+                    peso_total += prod.peso * cant
+                valor = f"{peso_total:.2f} lb"
+            # Firma del declarante es nombre_comprador
+            if campo == "Firma del declarante":
+                valor = nombre_comprador
+
+            pdf.cell(col_widths[0], 10, campo, border=1)
+            pdf.cell(col_widths[1], 10, valor, border=1)
+            pdf.cell(col_widths[2], 10, seccion, border=1)
+            pdf.ln()
+
+        # Guardar y abrir PDF
+        nombre_archivo = f"envio_{nombre_comprador.replace(' ', '_')}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        ruta = os.path.join(os.getcwd(), nombre_archivo)
+        pdf.output(ruta)
+
+        try:
+            if os.name == 'nt':
+                os.startfile(ruta)
+        except Exception as e:
+            print(f"No se pudo abrir el archivo automáticamente: {e}")
+
+        root = Tk()
+        root.withdraw()
+        messagebox.showinfo("Éxito", f"PDF generado correctamente:\n{ruta}")
+        root.destroy()
 
     def generar_rastreo(self):
         if not self.envio_actual.productos_cantidades:
@@ -342,9 +454,16 @@ class EnviosApp:
         self.text_rastreo.insert(tk.END, texto)
         self.text_rastreo.configure(state='disabled')
 
+    def mostrar_info_envio(self):
+        if not self.envio_actual.productos_cantidades:
+            messagebox.showinfo("Info Envío", "No hay envío creado actualmente.")
+            return
+        info = "Información del Envío:\n\n"
+        for producto, cantidad in self.envio_actual.productos_cantidades.items():
+            info += f"{producto.nombre}: {cantidad} unidades\n"
+        messagebox.showinfo("Info Envío", info)
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = EnviosApp(root)
     root.mainloop()
-
