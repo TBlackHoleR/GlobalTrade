@@ -104,10 +104,34 @@ class EnviosApp:
         style.configure('TEntry', font=('Segoe UI', 10))
         style.configure('TCombobox', font=('Segoe UI', 10))
 
-        main_frame = ttk.Frame(self.root, padding=15)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=15)
+        # Crear canvas y scrollbar para la ventana completa
+        container = ttk.Frame(self.root)
+        container.pack(fill='both', expand=True)
 
-        nombre_frame = ttk.Frame(main_frame)
+        self.canvas = tk.Canvas(container, borderwidth=0, background="#ffffff")
+        vsb = ttk.Scrollbar(container, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=vsb.set)
+
+        vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame interno para contener los widgets
+        self.main_frame = ttk.Frame(self.canvas, padding=15)
+        self.main_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(
+                scrollregion=self.canvas.bbox("all")
+            )
+        )
+
+        self.canvas.create_window((0, 0), window=self.main_frame, anchor="nw")
+
+        # Bind para navegación con roda mouse (solo vertical)
+        self.main_frame.bind("<Enter>", self._bind_to_mousewheel)
+        self.main_frame.bind("<Leave>", self._unbind_from_mousewheel)
+
+        # Ahora construir la UI dentro de self.main_frame (reemplazando main_frame)
+        nombre_frame = ttk.Frame(self.main_frame)
         nombre_frame.pack(fill='x', pady=(0, 15))
         ttk.Label(nombre_frame, text="Nombre del Comprador:", width=20).pack(side='left')
         self.nombre_comprador_var = tk.StringVar()
@@ -142,7 +166,7 @@ class EnviosApp:
         for campo, valor in self.grid_structure:
             var = tk.StringVar()
             if valor == "":
-                frame = ttk.Frame(main_frame)
+                frame = ttk.Frame(self.main_frame)
                 frame.pack(fill='x', pady=2)
                 ttk.Label(frame, text=campo + ":", width=30, anchor='w').pack(side='left')
                 entry = ttk.Entry(frame, textvariable=var, width=50)
@@ -151,9 +175,9 @@ class EnviosApp:
                 var.set(valor)
             self.grid_entries_vars[campo] = var
 
-        ttk.Label(main_frame, text="Módulo de Envíos y Rastreo", style='Title.TLabel').pack(pady=(5, 15))
+        ttk.Label(self.main_frame, text="Módulo de Envíos y Rastreo", style='Title.TLabel').pack(pady=(5, 15))
 
-        seleccion_frame = ttk.LabelFrame(main_frame, text="Agregar Productos al Envío", padding=12)
+        seleccion_frame = ttk.LabelFrame(self.main_frame, text="Agregar Productos al Envío", padding=12)
         seleccion_frame.pack(fill='x', pady=10)
 
         ttk.Label(seleccion_frame, text="Categoría:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
@@ -178,7 +202,7 @@ class EnviosApp:
         btn_agregar = ttk.Button(seleccion_frame, text="Agregar al Envío", command=self.agregar_producto_envio)
         btn_agregar.grid(row=0, column=6, padx=10, pady=5)
 
-        seleccionados_frame = ttk.LabelFrame(main_frame, text="Productos Seleccionados", padding=12)
+        seleccionados_frame = ttk.LabelFrame(self.main_frame, text="Productos Seleccionados", padding=12)
         seleccionados_frame.pack(fill='both', expand=True, pady=10)
 
         columns = ("producto", "cantidad", "precio_unit", "peso_unit", "subtotal")
@@ -198,13 +222,13 @@ class EnviosApp:
                                   command=self.eliminar_producto_seleccionado)
         btn_eliminar.pack(pady=5)
 
-        bottom_frame = ttk.Frame(main_frame)
+        bottom_frame = ttk.Frame(self.main_frame)
         bottom_frame.pack(fill='x', pady=10)
 
         self.label_costo_total = ttk.Label(bottom_frame, text="Costo Total: $0.00", font=('Segoe UI', 12, 'bold'))
         self.label_costo_total.pack(side='left', padx=5)
 
-        btn_frame = ttk.Frame(main_frame)
+        btn_frame = ttk.Frame(self.main_frame)
         btn_frame.pack(fill='x', pady=10)
 
         self.btn_crear_envio = ttk.Button(btn_frame, text="Crear Envío", command=self.crear_envio)
@@ -218,14 +242,26 @@ class EnviosApp:
                                         state=tk.DISABLED)
         self.btn_info_envio.pack(side='left', padx=10)
 
-        rastreo_frame = ttk.LabelFrame(main_frame, text="Rastreo del Envío", padding=10)
+        rastreo_frame = ttk.LabelFrame(self.main_frame, text="Rastreo del Envío", padding=10)
         rastreo_frame.pack(fill='both', expand=True, pady=10)
 
+        # Scrollbar vertical para Text rastreo
         self.text_rastreo = tk.Text(rastreo_frame, height=12, width=80)
-        self.text_rastreo.pack(padx=5, pady=5, fill='both', expand=True)
+        self.text_rastreo.pack(side='left', fill='both', expand=True)
         self.text_rastreo.configure(state='disabled')
 
+        scroll_rastreo = ttk.Scrollbar(rastreo_frame, orient='vertical', command=self.text_rastreo.yview)
+        scroll_rastreo.pack(side='right', fill='y')
+        self.text_rastreo['yscrollcommand'] = scroll_rastreo.set
+
         self.actualizar_productos()
+
+    def _bind_to_mousewheel(self, event):
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+    def _unbind_from_mousewheel(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def actualizar_productos(self, event=None):
         categoria = self.categoria_var.get()
@@ -408,3 +444,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = EnviosApp(root)
     root.mainloop()
+
