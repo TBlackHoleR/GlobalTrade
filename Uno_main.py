@@ -16,7 +16,6 @@ def ejecutar_envios():
     subprocess.run(["python", "src/Tres_envios.py"])
 
 def ejecutar_conversion():
-    root.destroy()
     subprocess.run(["python", "src/Cuatro_conversion.py"])
 
 def ejecutar_documentacion():

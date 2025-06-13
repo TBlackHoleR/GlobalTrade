@@ -89,38 +89,22 @@ class GestorAranceles:
     
     def obtener_tasa_cambio(self, moneda_origen, moneda_destino):
         """Obtiene tasa de cambio entre dos monedas usando USD como intermediario"""
-        # Si alguna moneda no está en las tasas, usar USD como respaldo
         tasa_origen = TASAS_CAMBIO.get(moneda_origen, 1.0)
         tasa_destino = TASAS_CAMBIO.get(moneda_destino, 1.0)
-        
-        # Convertir: moneda_origen -> USD -> moneda_destino
-        # 1 unidad de moneda_origen = (1 / tasa_origen) USD
-        # 1 USD = tasa_destino unidades de moneda_destino
-        # Por lo tanto: 1 unidad moneda_origen = (tasa_destino / tasa_origen) moneda_destino
         return tasa_destino / tasa_origen
     
     def calcular_costo_total(self, valor_producto, pais_origen, pais_destino, peso_lb, tipo_producto):
         """Calcula costo total del producto con conversión internacional"""
-        # Obtener monedas de los países
         moneda_origen = self.paises[pais_origen]['moneda']
         moneda_destino = self.paises[pais_destino]['moneda']
         
-        # Obtener tasa de cambio
         tasa_cambio = self.obtener_tasa_cambio(moneda_origen, moneda_destino)
-        
-        # Convertir el valor del producto a moneda destino
         valor_destino = valor_producto * tasa_cambio
-        
-        # Calcular arancel (basado en país destino)
         tasa_arancel = self.tarifas.get(pais_destino, 0.05)
         arancel_destino = valor_destino * tasa_arancel
-        
-        # Costos logísticos (en USD, luego convertimos a moneda destino)
         costo_logistica_usd = peso_lb * self.costos_logistica.get(tipo_producto, 0)
-        # Convertir costo logística a moneda destino
         tasa_logistica = self.obtener_tasa_cambio('USD', moneda_destino)
         costo_logistica_destino = costo_logistica_usd * tasa_logistica
-        
         total_destino = valor_destino + arancel_destino + costo_logistica_destino
         
         return {
@@ -140,45 +124,55 @@ class ChronosApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Chronos Supply Chain - Internacional")
-        self.root.geometry("700x650")  # Tamaño más grande para el grid
+        self.root.geometry("700x650")
         self.gestor = GestorAranceles()
         
+        # Crear Scroll Bar y Windows 
+        container = ttk.Frame(self.root)
+        container.pack(fill='both', expand=True)
+
+        self.canvas = tk.Canvas(container, borderwidth=0, background="#ffffff")
+        vsb = ttk.Scrollbar(container, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=vsb.set)
+
+        vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Frame interno para contener los widgets
+        self.main_frame = ttk.Frame(self.canvas, padding=15)
+        self.main_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(
+                scrollregion=self.canvas.bbox("all")
+            )
+        )
+  ## Crear Canvas para que tenga la scrollbar.
+        self.canvas.create_window((0, 0), window=self.main_frame, anchor="nw")
+
+        # Mostrar fecha actual
+        fecha_actual = datetime.datetime.now().strftime("%d/%m/%Y")
+        ttk.Label(self.root, text=f"Fecha: {fecha_actual}", 
+                 font=('Arial', 9)).pack(anchor='ne', padx=10)
+
         # Variables para selección
         self.pais_origen = tk.StringVar()
         self.pais_destino = tk.StringVar()
         
         # Crear la interfaz
         self.crear_interfaz()
-        
-        # Mostrar fecha actual
-        fecha_actual = datetime.datetime.now().strftime("%d/%m/%Y")
-        ttk.Label(self.root, text=f"Fecha: {fecha_actual}", 
-                 font=('Arial', 9)).pack(anchor='ne', padx=10)
     
     def crear_interfaz(self):
-        # Marco principal
-        main_frame = ttk.Frame(self.root, padding=15)
-        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
-        
-        # Botón Menú en la parte superior izquierda
-        btn_menu = ttk.Button(main_frame, text="Menú Principal", command=self.regresar_menu)
-        btn_menu.pack(anchor='nw', pady=(0, 10))
-        
-        # Título de la aplicación
-        ttk.Label(main_frame, text="Chronos Supply Chain - Internacional", 
+        ttk.Label(self.main_frame, text="Chronos Supply Chain - Internacional", 
                  font=('Arial', 16, 'bold')).pack(pady=10)
         
-        # Logo (simulado)
-        logo_frame = ttk.Frame(main_frame)
+        logo_frame = ttk.Frame(self.main_frame)
         logo_frame.pack(pady=5)
         ttk.Label(logo_frame, text="✈️ CHRONOS GLOBAL", font=('Arial', 12)).pack()
         ttk.Label(logo_frame, text="Sistema Internacional de Importaciones", font=('Arial', 10)).pack()
         
-        # Frame para selección de países
-        paises_frame = ttk.LabelFrame(main_frame, text="Selección de Países", padding=10)
+        paises_frame = ttk.LabelFrame(self.main_frame, text="Selección de Países", padding=10)
         paises_frame.pack(fill='x', pady=10)
         
-        # Países de origen
         ttk.Label(paises_frame, text="País Origen:", font=('Arial', 10)).grid(row=0, column=0, padx=5, pady=5, sticky='w')
         paises_origen = list(self.gestor.paises.keys())
         self.combo_origen = ttk.Combobox(paises_frame, values=paises_origen, 
@@ -187,48 +181,39 @@ class ChronosApp:
         self.combo_origen.bind('<<ComboboxSelected>>', self.actualizar_monedas)
         self.combo_origen.current(0)
         
-        # Moneda origen
         self.label_moneda_origen = ttk.Label(paises_frame, text="Moneda: ", font=('Arial', 9))
         self.label_moneda_origen.grid(row=0, column=2, padx=10, pady=5, sticky='w')
         
-        # Países de destino
         ttk.Label(paises_frame, text="País Destino:", font=('Arial', 10)).grid(row=1, column=0, padx=5, pady=5, sticky='w')
         self.combo_destino = ttk.Combobox(paises_frame, values=paises_origen, 
                                          textvariable=self.pais_destino, width=15)
         self.combo_destino.grid(row=1, column=1, padx=5, pady=5)
         self.combo_destino.bind('<<ComboboxSelected>>', self.actualizar_monedas)
-        self.combo_destino.current(10)  # Guatemala por defecto
+        self.combo_destino.current(10)  
         
-        # Moneda destino
         self.label_moneda_destino = ttk.Label(paises_frame, text="Moneda: ", font=('Arial', 9))
         self.label_moneda_destino.grid(row=1, column=2, padx=10, pady=5, sticky='w')
         
-        # Frame para detalles del producto
-        producto_frame = ttk.LabelFrame(main_frame, text="Detalles del Producto", padding=10)
+        producto_frame = ttk.LabelFrame(self.main_frame, text="Detalles del Producto", padding=10)
         producto_frame.pack(fill='x', pady=10)
         
-        # Valor del producto
         ttk.Label(producto_frame, text="Valor del producto:", font=('Arial', 10)).grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.entry_valor = ttk.Entry(producto_frame, width=15)
         self.entry_valor.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         
-        # Moneda de valor
         self.label_moneda_valor = ttk.Label(producto_frame, text="en USD", font=('Arial', 9))
         self.label_moneda_valor.grid(row=0, column=2, padx=5, pady=5, sticky='w')
         
-        # Peso en libras
         ttk.Label(producto_frame, text="Peso (libras):", font=('Arial', 10)).grid(row=1, column=0, padx=5, pady=5, sticky='w')
         self.entry_peso = ttk.Entry(producto_frame, width=10)
         self.entry_peso.grid(row=1, column=1, padx=5, pady=5, sticky='w')
         
-        # Tipo de producto
         ttk.Label(producto_frame, text="Tipo de producto:", font=('Arial', 10)).grid(row=2, column=0, padx=5, pady=5, sticky='w')
         self.combo_tipo = ttk.Combobox(producto_frame, values=['Tecnología', 'Perecederos', 'Híbridos'])
         self.combo_tipo.grid(row=2, column=1, padx=5, pady=5, sticky='w', columnspan=2)
         self.combo_tipo.current(0)
         
-        # Botón de cálculo
-        btn_frame = ttk.Frame(main_frame)
+        btn_frame = ttk.Frame(self.main_frame)
         btn_frame.pack(fill='x', pady=15)
         
         btn_calcular = ttk.Button(btn_frame, text="Calcular Costo Total", 
@@ -239,8 +224,7 @@ class ChronosApp:
                                 command=self.limpiar_campos, width=10)
         btn_limpiar.pack(side='left')
         
-        # Área de resultados
-        resultados_frame = ttk.LabelFrame(main_frame, text="Resultados del Cálculo", padding=10)
+        resultados_frame = ttk.LabelFrame(self.main_frame, text="Resultados del Cálculo", padding=10)
         resultados_frame.pack(fill='both', expand=True, pady=10)
         
         self.resultados_texto = tk.StringVar()
@@ -250,39 +234,25 @@ class ChronosApp:
                                    wraplength=650, justify='left', font=('Arial', 10))
         resultados_label.pack(fill='both', expand=True)
         
-        # Actualizar monedas iniciales
         self.actualizar_monedas()
     
-    def regresar_menu(self):
-        self.root.destroy()
-        # Ruta al menú principal
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        main_script = os.path.abspath(os.path.join(script_dir, '..', 'Uno_main.py'))
-        subprocess.Popen([sys.executable, main_script])
-        sys.exit()  # Cierra completamente este script
     
     def actualizar_monedas(self, event=None):
-        """Actualiza la información de monedas cuando se selecciona un país"""
-        # Obtener códigos de países seleccionados
         cod_origen = self.pais_origen.get()
         cod_destino = self.pais_destino.get()
         
-        # Actualizar moneda origen
         if cod_origen in self.gestor.paises:
             moneda_origen = self.gestor.paises[cod_origen]['moneda']
             nombre, simbolo = NOMBRES_MONEDA.get(moneda_origen, (moneda_origen, moneda_origen))
             self.label_moneda_origen.config(text=f"Moneda: {nombre} ({simbolo})")
         
-        # Actualizar moneda destino
         if cod_destino in self.gestor.paises:
             moneda_destino = self.gestor.paises[cod_destino]['moneda']
             nombre, simbolo = NOMBRES_MONEDA.get(moneda_destino, (moneda_destino, moneda_destino))
             self.label_moneda_destino.config(text=f"Moneda: {nombre} ({simbolo})")
     
     def calcular_total(self):
-        """Calcula y muestra el costo total con desglose detallado"""
         try:
-            # Obtener países seleccionados
             cod_origen = self.pais_origen.get()
             cod_destino = self.pais_destino.get()
             
@@ -291,7 +261,6 @@ class ChronosApp:
             if not cod_destino:
                 raise ValueError("Seleccione un país de destino")
             
-            # Obtener otros datos
             valor = self.entry_valor.get().strip()
             peso = self.entry_peso.get().strip()
             tipo = self.combo_tipo.get()
@@ -309,16 +278,13 @@ class ChronosApp:
             if peso_num <= 0:
                 raise ValueError("El peso debe ser mayor que cero")
             
-            # Obtener nombres completos de países
             pais_origen = NOMBRES_PAISES.get(cod_origen, cod_origen)
             pais_destino = NOMBRES_PAISES.get(cod_destino, cod_destino)
             
-            # Calcular costos
             resultados = self.gestor.calcular_costo_total(
                 valor_num, cod_origen, cod_destino, peso_num, tipo
             )
             
-            # Formatear resultados con desglose detallado
             resultado_texto = (
                 f"Ruta: {pais_origen} → {pais_destino}\n"
                 f"Tipo de producto: {tipo}\n"
@@ -348,16 +314,14 @@ class ChronosApp:
             messagebox.showerror("Error", f"Error inesperado: {str(e)}")
     
     def limpiar_campos(self):
-        """Limpia todos los campos del formulario"""
         self.combo_origen.current(0)
-        self.combo_destino.current(10)  # Guatemala por defecto
+        self.combo_destino.current(10)
         self.actualizar_monedas()
         self.entry_valor.delete(0, tk.END)
         self.entry_peso.delete(0, tk.END)
         self.combo_tipo.current(0)
         self.resultados_texto.set("Complete los datos y haga clic en Calcular")
 
-# Iniciar la aplicación
 if __name__ == "__main__":
     root = tk.Tk()
     app = ChronosApp(root)

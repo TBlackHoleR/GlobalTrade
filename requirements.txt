@@ -1,0 +1,6 @@
+Instalar FPDF:
+https://pypi.org/project/fpdf/#files
+
+En Símbolo de sistema o en la terminal de Python ejecutar el siguiente código:
+Pip install fpdf
+Pip show fpdf
