@@ -1,69 +1,97 @@
-División por Roles y Módulos:
+🌐 GlobalTrade
 
-1. Coordinador del Proyecto / Documentador - Brayan Barreno
-Responsable de: Organización general, integración de módulos, documentación final.
+**GlobalTrade** 
+Es una aplicación educativa diseñada para simular procesos clave del comercio internacional. Permite gestionar productos, calcular aranceles y conversiones de divisas, generar documentación aduanera y rastrear envíos desde una interfaz gráfica amigable.
 
-Tareas:
+## 📌 Características principales
 
-Coordinar y llevar control de avances, correccion y unificacacion del proyecto.
+- 📦 **Gestión de productos** (perecibles, electrónicos e híbridos)
+- 💰 **Conversión de monedas** basada en tasas predeterminadas
+- 📄 **Cálculo automático de aranceles** según país de destino
+- 🚚 **Creación y rastreo de envíos** paso a paso
+- 📑 **Generación de documentación aduanera** e inventarios
+- 🖥️ **Interfaz gráfica intuitiva** con menús y botones interactivos (Tkinter)
 
-Mantener actualizado la documentacion del proyecto.
+## 🚀 Requisitos
 
-Documentar las clases y módulos.
+- Python 3.10 o superior
+- Sistema operativo: Windows o Linux
+- Librerías: ver sección de instalación
 
-Revisar el cumplimiento de los entregables.
+## 🛠️ Instalación
 
-Preparar la presentación final o documento final xd.
+1. **Clona el repositorio:**
+   ```bash
+   git clone https://github.com/TBlackHoleR/GlobalTrade.git
+   cd GlobalTrade
 
+2. **Crea un entorno virtual**
+    python -m venv venv
+    venv\Scripts\activate  # En Windows
+    source venv/bin/activate  # En Linux/Mac
 
+3. **Instala las dependencias:**
+    instrucciones en requeriments.txt
 
-2. Módulo de Productos (POO, TDAs, Polimorfismo) - Carlos
-Responsable de: Diseñar clases Producto, ProductoPerecible, ProductoElectronico, ProductoHibrido.
+▶️ Cómo usar GlobalTrade
+1. **Ejecuta el menú principal:**
+    python Uno_main.py
 
-Tareas:
+2. **Se abrirá una ventana gráfica con varias opciones:**
 
-Implementar atributos y métodos (incluyendo métodos polimórficos como calcular_aranceles()).
+    -Gestión de productos: agregar y visualizar productos.
+    -Simulación de envíos: seleccionar productos, país de destino y generar seguimiento.
+    -Conversión de monedas: convertir entre diferentes divisas.
+    -Generación de documentación: visualizar detalles aduaneros o exportar.
 
-Validar datos de entrada.
+3. **Puedes cerrar la aplicación en cualquier momento desde el menú o la “X”.**
 
-Pruebas unitarias de comportamiento.
+## 📋 Ejemplo de uso
+Abre el programa (Uno_main.py)
 
+Agrega productos en la sección correspondiente
 
-3. Módulo de Envíos y Rastreo - Meli
-Responsable de: Clase Envio, vinculación con productos.
+Ve a "Simular envío", selecciona productos y destino
 
-Tareas:
+Aplica conversión y calcula aranceles
 
-Implementar métodos calcularCostoTotal() y generarRastreo().
+Exporta la documentación o revisa el seguimiento del envío
 
-Asociar múltiples productos por envío.
+## 📁 Estructura del proyecto
+GlobalTrade/
+│
+│── docs/
+│   └── Documentacion.pdf   # Docuentación del proyecto
+│
+│
+├── src/                    # Código fuente organizado por módulos
+│   ├── Dos_productos.py        # Clases de productos
+│   ├── Tres_envios.py           # Clase Envio
+│   ├── Cuatro_conversiones.py     # Cálculo de divisas y aranceles
+│   └── Cinco_documentacion.py         # Generacion de Documentacion
+│
+├── venv/                   # Carpeta generada por la interfaz grafica
+│   ├── Lib/
+│   ├── Scripts/
+│   └── pyvenv.cfg         
+│
+├── fdpd.py                 # Código para generar documentacion
+├── README.md               # Manual de usuario
+├── Uno_main.py             # Archivo principal (lanza la app)
+└── requirements.txt        # Dependencias
 
-Simular rastreo (puede usarse un historial con fechas y ubicaciones).
+## 👥 Créditos
+Este proyecto fue desarrollado por estudiantes de la Universidad Regional de Guatemala como parte del curso de Programación II.
 
-Pruebas del sistema logístico.
+Equipo GlobalTrade:
 
+Brayan Barreno (Coordinador y Documentación)
 
-4. Módulo de Conversión Monetaria y Aranceles - Ney
-Responsable de: Cálculo de costos en distintas monedas y gestión de aranceles según país.
+Carlos (Módulo de productos)
 
-Tareas:
+Melisa (Módulo de envíos)
 
-Crear estructura para almacenar tarifas y tasas de cambio (CSV o JSON).
+Neytan (Conversión y aranceles)
 
-Implementar funciones de conversión y aplicación de aranceles.
+Omar (Inventario y documentación)
 
-Importar tarifas desde archivo.
-
-Pruebas con diferentes escenarios.
-
-
-5. Generador de Documentación y Gestor de Inventario - Omar
-Responsable de: Generación de documentos y almacenamiento de datos.
-
-Tareas:
-
-Implementar método generarDocumentacion() para aduanas (PDF o consola).
-
-Simular almacenamiento de historial de envíos e inventarios (puede ser un .txt o .json).
-
-Exportar documentación en varios formatos.
