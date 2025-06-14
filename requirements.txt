@@ -4,3 +4,11 @@ https://pypi.org/project/fpdf/#files
 En Símbolo de sistema o en la terminal de Python ejecutar el siguiente código:
 Pip install fpdf
 Pip show fpdf
+
+Instalar Tkinter desde extensiones
+
+Crear un entorno virtual
+python -m venv venv
+venv\Scripts\activate  # En Windows
+source venv/bin/activate  # En Linux/Mac
+
